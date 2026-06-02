@@ -31,6 +31,9 @@ archives:
 checksum:
   name_template: "checksums.txt"
 
+release:
+  replace_existing_artifacts: true
+
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
 
@@ -43,6 +46,7 @@ brews:
     repository:
       owner: gustavoguarda
       name: homebrew-zen-sync
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: "https://github.com/gustavoguarda/zen-sync"
     description: "Arc-like continuity for Zen Browser on macOS"
     license: "MIT"
