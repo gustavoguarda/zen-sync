@@ -22,7 +22,7 @@ func Push(w io.Writer, args []string) error {
 		return err
 	}
 	if profile.Running(cfg.ZenRunningPattern) {
-		return fmt.Errorf("Zen is running — close it before manual push (daemon handles live writes)")
+		return fmt.Errorf("zen is running — close it before manual push (daemon handles live writes)")
 	}
 	host, _ := os.Hostname()
 	for _, f := range cfg.Files {
@@ -53,7 +53,7 @@ func Pull(w io.Writer, args []string) error {
 		return err
 	}
 	if profile.Running(cfg.ZenRunningPattern) {
-		return fmt.Errorf("Zen is running — close it before manual pull")
+		return fmt.Errorf("zen is running — close it before manual pull")
 	}
 	host, _ := os.Hostname()
 	last, _ := sync.ReadLastPushHost(cfg.SyncDir)

@@ -38,7 +38,7 @@ func Restore(w io.Writer, args []string) error {
 	}
 
 	if profile.Running(cfg.ZenRunningPattern) {
-		return fmt.Errorf("Zen is running — close it before restore")
+		return fmt.Errorf("zen is running — close it before restore")
 	}
 
 	name := args[0]

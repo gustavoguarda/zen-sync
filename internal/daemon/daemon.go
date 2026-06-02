@@ -39,7 +39,7 @@ func Run(ctx context.Context, cfg Config, logf LogFn) error {
 	if err != nil {
 		return fmt.Errorf("daemon: new watcher: %w", err)
 	}
-	defer w.Close()
+	defer func() { _ = w.Close() }()
 
 	// Watch the profile directory itself (fsnotify on macOS doesn't always
 	// pick up renames of individual files; watching the parent dir is more

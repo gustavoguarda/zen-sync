@@ -29,7 +29,7 @@ func Daemon(w io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("daemon: open log: %w", err)
 	}
-	defer closeFn()
+	defer func() { _ = closeFn() }()
 
 	host, _ := os.Hostname()
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
