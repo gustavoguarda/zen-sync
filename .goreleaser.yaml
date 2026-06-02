@@ -1,0 +1,52 @@
+version: 2
+
+project_name: zen-sync
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: zen-sync
+    main: ./cmd/zen-sync
+    binary: zen-sync
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.buildDate={{.Date}}
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  use: github
+  sort: asc
+
+brews:
+  - name: zen-sync
+    repository:
+      owner: gustavoguarda
+      name: homebrew-zen-sync
+    homepage: "https://github.com/gustavoguarda/zen-sync"
+    description: "Arc-like continuity for Zen Browser on macOS"
+    license: "MIT"
+    install: |
+      bin.install "zen-sync"
+    test: |
+      system "#{bin}/zen-sync", "version"

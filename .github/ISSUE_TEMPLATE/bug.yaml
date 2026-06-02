@@ -1,0 +1,29 @@
+name: Bug report
+description: Something is broken
+labels: [bug]
+body:
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `zen-sync doctor`
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+  - type: input
+    id: zen-version
+    attributes:
+      label: Zen Browser version
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
