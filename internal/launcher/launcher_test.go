@@ -35,13 +35,28 @@ func TestInstall_CreatesAppBundleStructure(t *testing.T) {
 		t.Errorf("launcher script should invoke open subcommand")
 	}
 
-	// Info.plist exists and contains bundle id
+	// Info.plist exists, contains bundle id, and references the icon
 	info, err := os.ReadFile(filepath.Join(appPath, "Contents", "Info.plist"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(info), "io.github.gustavoguarda.zen-sync.launcher") {
 		t.Errorf("Info.plist missing bundle id")
+	}
+	if !strings.Contains(string(info), "<key>CFBundleIconFile</key><string>icon</string>") {
+		t.Errorf("Info.plist missing CFBundleIconFile reference")
+	}
+
+	// Icon file written to Resources/, non-empty, has the icns magic
+	icon, err := os.ReadFile(filepath.Join(appPath, "Contents", "Resources", "icon.icns"))
+	if err != nil {
+		t.Fatalf("icon.icns missing: %v", err)
+	}
+	if len(icon) < 1024 {
+		t.Errorf("icon.icns suspiciously small: %d bytes", len(icon))
+	}
+	if string(icon[:4]) != "icns" {
+		t.Errorf("icon.icns does not start with icns magic: %q", string(icon[:8]))
 	}
 }
 
