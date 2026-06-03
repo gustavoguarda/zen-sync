@@ -54,10 +54,60 @@ See [docs/INSTALL.md](docs/INSTALL.md) for transport setup details
 
 ## How it works
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the high-level. TL;DR:
-a small Go binary runs in the background watching three files, copies them
-to your sync folder on change, and a Dock launcher swaps them back in
-before launching Zen on the other Mac.
+The daemon doesn't poll on an interval — it sleeps in a kernel `select`
+and is woken up by fsnotify only when one of the tracked files actually
+changes.
+
+End-to-end timeline of one sync (host change → bytes arrive on the other Mac):
+
+| Step | When | What happens |
+|---|---|---|
+| 0 | T+0ms | You pin a tab, create a workspace, etc. in Zen |
+| 1 | T+up to 15s | Zen flushes `zen-sessions.jsonlz4` to disk (Firefox's session save interval; instant on tab close, app quit, or some events) |
+| 2 | T+~1ms after flush | fsnotify event delivers; daemon wakes from `select` |
+| 3 | T+1000ms after flush | Debounce timer expires (1s so rapid writes collapse into one push and we don't read a half-flushed file) |
+| 4 | T+~10ms | SHA-256 of the file. If unchanged from last push, skip (Zen sometimes rewrites with same content). |
+| 5 | T+~50ms | Atomic copy to `sync_dir` (write to temp + `fsync` + rename). Stamp `.meta/last-push-host` with our hostname. |
+| 6 | T+1-3s | Syncthing on the host detects the change and ships it across. |
+| 7 | T+<1s | Syncthing on the other Mac writes the file. Bytes match the host now. |
+
+**Total host action → other Mac has the bytes**: typically 3-20 seconds.
+The wide range is mostly Zen's own flush interval, not anything zen-sync
+controls.
+
+**Idle CPU**: effectively 0%. The daemon blocks in `select`; no CPU is
+used until fsnotify wakes it.
+
+To watch the daemon in real time:
+
+```sh
+tail -f ~/Library/Logs/zen-sync/daemon.log
+# You'll see: daemon: pushed zen-sessions.jsonlz4 (hash=a5823f19…)
+```
+
+To check the current sync state:
+
+```sh
+zen-sync status
+# Local hash vs sync hash per file + last-push-host
+```
+
+For mechanism details (fsnotify vs polling trade-offs, debounce rationale,
+hash-check semantics), see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Keeping up to date
+
+```sh
+zen-sync upgrade
+```
+
+That wraps `brew update && brew upgrade zen-sync` and explicitly refreshes
+the `.app` bundle + LaunchAgent in one step. Safe to re-run anytime — it's
+a no-op when nothing changed.
+
+Use it instead of the manual `brew upgrade zen-sync` so you never have to
+remember to `brew trust` the tap, re-run `init`, or kill Finder for icon
+cache.
 
 ## Status
 

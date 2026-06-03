@@ -58,3 +58,31 @@ for an error loop. File a bug with the log excerpt.
 
 Right-click → Open the first time. macOS will then trust it. v0.1 is
 unsigned; notarization is on the roadmap.
+
+## I upgraded via brew but the .app icon didn't change
+
+`brew upgrade zen-sync` runs the formula's `post_install` hook to refresh
+`/Applications/Zen Sync.app` and the LaunchAgent. Modern Homebrew (~5.x)
+silently skips that hook for "untrusted" taps. Two ways out:
+
+1. **Easiest**: use the wrapper. `zen-sync upgrade` runs
+   `ensure-installation` after the brew step, so the refresh happens
+   regardless of trust.
+2. Trust the tap once: `brew trust gustavoguarda/zen-sync`. Future
+   `brew upgrade zen-sync` invocations will run `post_install` normally.
+
+If you've already upgraded and the icon is stale, run
+`zen-sync ensure-installation` once to catch up.
+
+## `zen-sync: unknown command "upgrade"`
+
+You're on a pre-0.1.3 build. Use the manual path one more time, then
+the wrapper will be available:
+
+```sh
+brew update
+brew upgrade zen-sync
+zen-sync ensure-installation
+```
+
+After that, `zen-sync upgrade` will exist.
