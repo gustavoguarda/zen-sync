@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-06-03
+
+### Added
+- `zen-sync upgrade` subcommand wraps `brew update && brew upgrade zen-sync`
+  so updates are a single command. Streams brew's output directly so the
+  user sees familiar progress + the auto-heal lines from `post_install`.
+  Refuses gracefully when the running binary wasn't installed via Homebrew
+  (source builds, manual cp, etc).
+
 ## [0.1.2] - 2026-06-02
 
 ### Added

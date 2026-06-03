@@ -56,6 +56,8 @@ func main() {
 		err = cli.Uninstall(os.Stdout)
 	case "ensure-installation":
 		err = cli.EnsureInstallation(os.Stdout)
+	case "upgrade":
+		err = cli.Upgrade(os.Stdout)
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -86,6 +88,7 @@ Commands:
   status                Show last sync, hashes, last-push-host
   restore               List or restore backups
   doctor                Diagnose common problems
+  upgrade               Refresh tap + upgrade to latest version via Homebrew
   ensure-installation   Refresh .app + LaunchAgent if a binary upgrade changed them
   uninstall             Remove LaunchAgent and Zen Sync.app
   version               Show build metadata
