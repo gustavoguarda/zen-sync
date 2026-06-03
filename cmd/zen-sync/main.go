@@ -20,6 +20,12 @@ var (
 )
 
 func main() {
+	// Plumb build metadata into the cli package so its subcommands can
+	// embed it in generated bundles (used by auto-heal in Ensure).
+	cli.BuildVersion = version
+	cli.BuildCommit = commit
+	cli.BuildDate = buildDate
+
 	if len(os.Args) < 2 {
 		usage()
 		os.Exit(2)
@@ -48,6 +54,8 @@ func main() {
 		err = cli.Restore(os.Stdout, args)
 	case "uninstall":
 		err = cli.Uninstall(os.Stdout)
+	case "ensure-installation":
+		err = cli.EnsureInstallation(os.Stdout)
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -70,16 +78,17 @@ Usage:
   zen-sync <command> [args]
 
 Commands:
-  init        Setup wizard: config + LaunchAgent + Zen Sync.app + first push
-  open        Pull state then launch Zen
-  push        Manual push (debug / source-of-truth)
-  pull        Manual pull (debug / recovery)
-  daemon      Long-running file watcher (called by LaunchAgent; not by user)
-  status      Show last sync, hashes, last-push-host
-  restore     List or restore backups
-  doctor      Diagnose common problems
-  uninstall   Remove LaunchAgent and Zen Sync.app
-  version     Show build metadata
+  init                  Setup wizard: config + LaunchAgent + Zen Sync.app + first push
+  open                  Pull state then launch Zen
+  push                  Manual push (debug / source-of-truth)
+  pull                  Manual pull (debug / recovery)
+  daemon                Long-running file watcher (called by LaunchAgent; not by user)
+  status                Show last sync, hashes, last-push-host
+  restore               List or restore backups
+  doctor                Diagnose common problems
+  ensure-installation   Refresh .app + LaunchAgent if a binary upgrade changed them
+  uninstall             Remove LaunchAgent and Zen Sync.app
+  version               Show build metadata
 
 Run 'zen-sync help' for this list.
 `)

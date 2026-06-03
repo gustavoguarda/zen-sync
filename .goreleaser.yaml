@@ -52,5 +52,10 @@ brews:
     license: "MIT"
     install: |
       bin.install "zen-sync"
+    post_install: |
+      config_path = "#{ENV["HOME"]}/.config/zen-sync/config.toml"
+      if File.exist?(config_path)
+        system bin/"zen-sync", "ensure-installation"
+      end
     test: |
       system "#{bin}/zen-sync", "version"

@@ -1,9 +1,10 @@
 // Package plist generates and installs the LaunchAgent plist that runs
 // `zen-sync daemon` at user login.
 //
-// Install/Uninstall shell out to launchctl. The Render function is pure
-// string generation and is unit-testable; Install/Uninstall require a
-// real launchd and are exercised via manual verification.
+// Install rewrites + reloads via launchctl. Ensure does the same but only
+// when the build-time commit recorded in the file's marker comment differs
+// from the supplied one — letting `brew upgrade` silently refresh the
+// LaunchAgent next time the user opens Zen Sync.app.
 package plist
 
 import (
@@ -11,11 +12,18 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 )
 
-// Render returns the XML body of the LaunchAgent plist.
-func Render(label, binaryPath, stdoutPath, stderrPath string) string {
+// commitRe extracts the build-time commit hash from the marker comment we
+// embed at the top of generated plists. Same pattern as launcher.
+var commitRe = regexp.MustCompile(`IOZenSyncCommit:(\S+)`)
+
+// Render returns the XML body of the LaunchAgent plist, including a marker
+// comment with the build version + commit so Ensure can detect drift.
+func Render(label, binaryPath, stdoutPath, stderrPath, version, commit string) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<!-- IOZenSyncCommit:%s IOZenSyncVersion:%s -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -44,7 +52,7 @@ func Render(label, binaryPath, stdoutPath, stderrPath string) string {
     <string>%s</string>
 </dict>
 </plist>
-`, label, binaryPath, stdoutPath, stderrPath)
+`, commit, version, label, binaryPath, stdoutPath, stderrPath)
 }
 
 // WriteFile creates parent dirs and writes body to path with 0644.
@@ -56,14 +64,16 @@ func WriteFile(path, body string) error {
 }
 
 // Install writes the plist to ~/Library/LaunchAgents/<label>.plist and
-// loads it via `launchctl load`.
-func Install(label, binaryPath, plistDir, logDir string) (string, error) {
+// loads it via `launchctl load`. The unload+load pair is idempotent so
+// re-running this on an existing install refreshes the daemon's config
+// without rebooting.
+func Install(label, binaryPath, plistDir, logDir, version, commit string) (string, error) {
 	if err := os.MkdirAll(logDir, 0o755); err != nil {
 		return "", err
 	}
 	stdout := filepath.Join(logDir, "launchd.out")
 	stderr := filepath.Join(logDir, "launchd.err")
-	body := Render(label, binaryPath, stdout, stderr)
+	body := Render(label, binaryPath, stdout, stderr, version, commit)
 	plistPath := filepath.Join(plistDir, label+".plist")
 	if err := WriteFile(plistPath, body); err != nil {
 		return "", err
@@ -74,6 +84,23 @@ func Install(label, binaryPath, plistDir, logDir string) (string, error) {
 		return plistPath, fmt.Errorf("launchctl load: %w", err)
 	}
 	return plistPath, nil
+}
+
+// Ensure regenerates the plist if the embedded commit differs from the
+// supplied one (or the file doesn't exist yet). Returns whether anything
+// changed. When changed=true, Install was called, which also reloads
+// launchctl so the daemon picks up the new plist immediately.
+func Ensure(label, binaryPath, plistDir, logDir, version, commit string) (bool, error) {
+	plistPath := filepath.Join(plistDir, label+".plist")
+	if body, err := os.ReadFile(plistPath); err == nil {
+		if m := commitRe.FindStringSubmatch(string(body)); len(m) == 2 && m[1] == commit {
+			return false, nil
+		}
+	}
+	if _, err := Install(label, binaryPath, plistDir, logDir, version, commit); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // Uninstall unloads the agent and removes the plist file.

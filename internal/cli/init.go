@@ -71,14 +71,14 @@ func Init(in io.Reader, out io.Writer) error {
 	}
 	plistDir := filepath.Join(home, "Library", "LaunchAgents")
 	logDir := filepath.Join(home, "Library", "Logs", "zen-sync")
-	if _, err := plist.Install(launchAgentLabel, binPath, plistDir, logDir); err != nil {
+	if _, err := plist.Install(launchAgentLabel, binPath, plistDir, logDir, BuildVersion, BuildCommit); err != nil {
 		return fmt.Errorf("install LaunchAgent: %w", err)
 	}
 	fmt.Fprintf(out, "✓ LaunchAgent installed (%s)\n", launchAgentLabel)
 
 	// 6. Install /Applications/Zen Sync.app.
 	appPath := "/Applications/Zen Sync.app"
-	if err := launcher.Install(appPath, binPath, launcherBundleID, "Zen Sync"); err != nil {
+	if err := launcher.Install(appPath, binPath, launcherBundleID, "Zen Sync", BuildVersion, BuildCommit); err != nil {
 		return fmt.Errorf("install launcher app: %w", err)
 	}
 	fmt.Fprintf(out, "✓ Launcher installed: %s\n", appPath)
