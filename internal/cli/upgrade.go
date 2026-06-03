@@ -36,6 +36,28 @@ func Upgrade(w io.Writer) error {
 		return fmt.Errorf("brew upgrade failed: %w", err)
 	}
 
+	// Belt-and-suspenders: modern brew silently skips the formula's
+	// post_install hook for untrusted taps. We can't count on it to
+	// refresh the .app + LaunchAgent. Exec the freshly-upgraded binary
+	// (it has the new commit hash baked in) so Ensure regenerates them
+	// against the new marker.
+	fmt.Fprintln(w, "→ zen-sync ensure-installation")
+	zsyncPath, _ := exec.LookPath("zen-sync")
+	if zsyncPath == "" {
+		for _, p := range []string{"/opt/homebrew/bin/zen-sync", "/usr/local/bin/zen-sync"} {
+			if _, statErr := os.Stat(p); statErr == nil {
+				zsyncPath = p
+				break
+			}
+		}
+	}
+	if zsyncPath == "" {
+		return fmt.Errorf("could not locate the upgraded zen-sync binary to call ensure-installation")
+	}
+	if err := streamCmd(w, zsyncPath, "ensure-installation"); err != nil {
+		return fmt.Errorf("ensure-installation failed: %w", err)
+	}
+
 	return nil
 }
 

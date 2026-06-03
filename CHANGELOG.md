@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-06-03
+
+### Fixed
+- `zen-sync upgrade` now explicitly calls `ensure-installation` after
+  `brew upgrade`, guaranteeing the .app + LaunchAgent refresh even when
+  brew silently skips the formula's `post_install` hook (which happens
+  on untrusted taps under modern brew). Users no longer have to remember
+  `brew trust gustavoguarda/zen-sync` for upgrades through the wrapper
+  to land the icon/plist updates.
+
 ## [0.1.3] - 2026-06-03
 
 ### Added
